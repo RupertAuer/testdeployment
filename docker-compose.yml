@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  deploymenttestapi:
+    image: ${DOCKER_REGISTRY}deploymenttestapi
+    build:
+      context: .
+      dockerfile: DeploymentTestAPI/Dockerfile

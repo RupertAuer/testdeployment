@@ -1,25 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using Microsoft.ServiceFabric.Services.Runtime;
+using System;
+using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace DeploymentTestAPI
 {
-    public class Program
+    internal static class Program
     {
-        public static void Main(string[] args)
+        /// <summary>
+        /// Dies ist der Einstiegspunkt des Diensthostprozesses.
+        /// </summary>
+        private static void Main()
         {
-            BuildWebHost(args).Run();
-        }
+            try
+            {
+                // Die Datei "ServiceManifest.XML" definiert mindestens einen Diensttypnamen.
+                // Durch die Registrierung eines Diensts wird ein Diensttypname einem .NET-Typ zugeordnet.
+                // Wenn Service Fabric eine Instanz dieses Diensttyps erstellt,
+                // wird eine Instanz der Klasse in diesem Hostprozess erstellt.
 
-        public static IWebHost BuildWebHost(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                .UseStartup<Startup>()
-                .Build();
+                ServiceRuntime.RegisterServiceAsync("DeploymentTestAPIType",
+                    context => new DeploymentTestAPI(context)).GetAwaiter().GetResult();
+
+                ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(DeploymentTestAPI).Name);
+
+                // Verhindert, dass dieser Hostprozess beendet wird, damit die Dienste weiterhin ausgeführt werden. 
+                Thread.Sleep(Timeout.Infinite);
+            }
+            catch (Exception e)
+            {
+                ServiceEventSource.Current.ServiceHostInitializationFailed(e.ToString());
+                throw;
+            }
+        }
     }
 }
